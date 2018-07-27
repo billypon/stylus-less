@@ -1,0 +1,19 @@
+{
+  "name": "stylus-less",
+  "version": "1.0.0",
+  "description": "Import variables from less to stylus",
+  "author": "billypon <billypon@gmail.com>",
+  "license": "MIT",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "dependencies": {
+    "less": "^2.7.3",
+    "stylus": ">=0.54.5"
+  },
+  "devDependencies": {
+    "assert": "^1.4.1",
+    "mocha": "^5.2.0"
+  }
+}

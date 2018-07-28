@@ -8,7 +8,7 @@ var fileCache = {}, stylusCache = {};
 
 function readFile(file, cache) {
   file = file.indexOf('.') < 0 ? file + '.less' : file;
-  if (fileCache[file]) {
+  if (cache && fileCache[file]) {
     return fileCache[file];
   }
   var str = fs.readFileSync(file).toString();
@@ -25,13 +25,11 @@ function readFile(file, cache) {
   return str;
 }
 
-module.exports = exports = function (options, lessOptions) {
+module.exports = exports = function (options) {
   options = options || {};
   options.prefix = options.prefix !== undefined ? options.prefix : '$';
   options.cache = options.cache === false ? false : true;
-
-  lessOptions = _.defaultsDeep({compress: true}, lessOptions || {});
-
+  options.less = _.defaultsDeep({compress: true}, options.less || {});
   return function (_stylus) {
     _stylus.include(__dirname);
     _stylus.define('import-less', function (file) {
@@ -53,52 +51,60 @@ module.exports = exports = function (options, lessOptions) {
       }
 
       file = path.resolve(file);
-      if (!stylusCache[file]) {
-        var str = readFile(file, options.cache);
-
-        var list = str.match(/^@[^:\n]+:[^;]+/gm);
-        str += '\n* {\n';
-        list.forEach(function (x) {
-          var name = x.split(':')[0].substr(1).trim();
-          str += 'e("' + name + ':@{' + name + '};");\n';
-        });
-        str += '}';
-
-        var _this = this;
-        less.render(str, lessOptions, function (err, result) {
-          if (err) {
-            throw err;
-          }
-
-          str = '';
-          result.css.split(/[;\n{}]/).forEach(function (x) {
-            if (x.indexOf(':') < 0) {
-              return;
-            }
-            x = x.split(':');
-            if (x[1] === '') {
-              return;
-            }
-            if (options.prefix) {
-              str += options.prefix;
-            }
-            str += x[0] + ' = ' + x[1] + '\n';
-          });
-
-          var parser = new stylus.Parser(str, stylus.utils.merge({
-            root: new stylus.nodes.Block()
-          }), _this.options);
-          var block = parser.parse();
-          if (options.cache) {
-            stylusCache[file] = block;
-          }
-
-          fn(_this, block);
-        });
-      } else {
+      if (options.cache && stylusCache[file]) {
         var block = stylusCache[file];
         fn(this, block);
+        return;
       }
+      var str = readFile(file, options.cache);
+
+      var list = str.match(/^@[^:\n]+:[^;]+/gm);
+      str += '\n* {\n';
+      list.forEach(function (x) {
+        var name = x.split(':')[0].substr(1).trim();
+        str += 'e("' + name + ':@{' + name + '};");\n';
+      });
+      if (options.less.globalVars) {
+        for (var x in options.less.globalVars) {
+          if (str.indexOf('"' + x + ':') > 0) {
+            continue;
+          }
+          str += 'e("' + x + ':' + options.less.globalVars[x] + ';");\n';
+        }
+      }
+      str += '}';
+
+      var _this = this;
+      less.render(str, options.less, function (err, result) {
+        if (err) {
+          throw err;
+        }
+
+        str = '';
+        result.css.split(/[;\n{}]/).forEach(function (x) {
+          if (x.indexOf(':') < 0) {
+            return;
+          }
+          x = x.split(':');
+          if (x[1] === '') {
+            return;
+          }
+          if (options.prefix) {
+            str += options.prefix;
+          }
+          str += x[0] + ' = ' + x[1] + '\n';
+        });
+
+        var parser = new stylus.Parser(str, stylus.utils.merge({
+          root: new stylus.nodes.Block()
+        }), _this.options);
+        var block = parser.parse();
+        if (options.cache) {
+          stylusCache[file] = block;
+        }
+
+        fn(_this, block);
+      });
     });
   }
 }

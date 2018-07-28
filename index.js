@@ -2,6 +2,7 @@ var fs = require('fs');
 var path = require('path');
 var stylus = require('stylus');
 var less = require('less');
+var _ = require('lodash');
 
 var fileCache = {}, stylusCache = {};
 
@@ -24,10 +25,13 @@ function readFile(file, cache) {
   return str;
 }
 
-module.exports = exports = function (options) {
+module.exports = exports = function (options, lessOptions) {
   options = options || {};
   options.prefix = options.prefix !== undefined ? options.prefix : '$';
   options.cache = options.cache === false ? false : true;
+
+  lessOptions = _.defaultsDeep({compress: true}, lessOptions || {});
+
   return function (_stylus) {
     _stylus.include(__dirname);
     _stylus.define('import-less', function (file) {
@@ -61,7 +65,7 @@ module.exports = exports = function (options) {
         str += '}';
 
         var _this = this;
-        less.render(str, {compress: true}, function (err, result) {
+        less.render(str, lessOptions, function (err, result) {
           if (err) {
             throw err;
           }

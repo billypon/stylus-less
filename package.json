@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "less": "^2.7.3",
+    "lodash": "^4.17.10",
     "stylus": ">=0.54.5"
   },
   "devDependencies": {

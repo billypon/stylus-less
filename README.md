@@ -2,7 +2,7 @@
 
 test.less
 
-```
+```less
 @color: black;
 ```
 
@@ -26,7 +26,7 @@ stylus(str)
 
 import less in styl file(less ext can be ignored)
 
-```
+```stylus
 import-less('test.less')
 body
   color $color

@@ -1,12 +1,14 @@
 var assert = require('assert');
 
-var fs = require('fs');
 var stylus = require('stylus');
 
+var file = 'test.styl';
+var fs = require('fs');
+var str = fs.readFileSync(file).toString()
+
 it('import', function () {
-  var str = fs.readFileSync('test.styl').toString();
   stylus(str)
-    .set('filename', 'test.styl')
+    .set('filename', file)
     .use(require('..')())
     .render(function (err, css) {
       if (err) {
@@ -16,10 +18,28 @@ it('import', function () {
     });
 });
 
-it('import without less options', function () {
-  var str = fs.readFileSync('test.styl').toString();
+it('global vars', function () {
   stylus(str)
-    .set('filename', 'test.styl')
+    .set('filename', file)
+    .use(require('..')({
+      cache: false,
+      less: {
+        globalVars: {
+          background: '#000'
+        }
+      }
+    }))
+    .render(function (err, css) {
+      if (err) {
+        throw err;
+      }
+      assert.equal(true, css.indexOf('$background') < 0);
+    });
+});
+
+it('modify vars', function () {
+  stylus(str)
+    .set('filename', file)
     .use(require('..')({
       cache: false,
       less: {

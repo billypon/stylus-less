@@ -25,6 +25,12 @@ function readFile(file, cache) {
   return str;
 }
 
+function lookupFile(file, paths) {
+  var utils = stylus.utils;
+  return file.endsWith('.less') ? utils.lookup(file, paths) :
+    utils.lookup(file + '.less', paths) || utils.lookup(path.resolve(file + '/', 'index.less'), paths);
+}
+
 module.exports = exports = function (options) {
   options = options || {};
   options.prefix = options.prefix !== undefined ? options.prefix : '$';
@@ -34,10 +40,7 @@ module.exports = exports = function (options) {
     _stylus.include(__dirname);
     _stylus.define('import-less', function (file) {
       file = file.string;
-      if (!file.endsWith('.less')) {
-        file += '.less';
-      }
-      file = stylus.utils.lookup(file, this.options.paths);
+      file = lookupFile(file, this.options.paths);
       if (!file) {
         return;
       }

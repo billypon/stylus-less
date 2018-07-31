@@ -12,7 +12,7 @@ use plugin for stylus
 var fs = require('fs');
 var stylus = require('stylus');
 
-var str = fs.readFileSync('test.styl').toString();
+var str = fs.readFileSync('test.styl', 'utf-8');
 stylus(str)
   .set('filename', 'test.styl')
   .use(require('..')())

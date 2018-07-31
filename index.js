@@ -11,7 +11,7 @@ function readFile(file, cache) {
   if (cache && fileCache[file]) {
     return fileCache[file];
   }
-  var str = fs.readFileSync(file).toString();
+  var str = fs.readFileSync(file, 'utf-8');
   var filePath = path.dirname(file);
   while (str.indexOf('@import') >= 0) {
     str = str.replace(/@import +("([^"]+)"|'([^']+)' *;)/, function () {

@@ -50,14 +50,14 @@ function render(str, options, callback) {
     var name = x.split(':')[0].substr(1).trim();
     str += 'e("' + name + ':@{' + name + '};");\n';
   });
-  if (options.less.globalVars) {
-    for (var x in options.less.globalVars) {
+  ['global', 'modify'].forEach(function (i) {
+    for (var x in options.less[i + 'Vars']) {
       if (str.indexOf('"' + x + ':') > 0) {
         continue;
       }
-      str += 'e("' + x + ':' + options.less.globalVars[x] + ';");\n';
+      str += 'e("' + x + ':' + options.less[i + 'Vars'][x] + ';");\n';
     }
-  }
+  });
   str += '}';
 
   var ctx = this;

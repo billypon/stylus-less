@@ -16,7 +16,7 @@ function readFile(file, cache) {
   while (str.indexOf('@import') >= 0) {
     str = str.replace(/@import +("([^"]+)"|'([^']+)' *;)/, function () {
       var includeFile = path.resolve(filePath, arguments[2] || arguments[3]);
-      return readFile(includeFile);
+      return readFile(includeFile, cache);
     });
   }
   if (cache) {

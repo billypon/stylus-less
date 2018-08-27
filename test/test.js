@@ -55,3 +55,13 @@ it('modify vars', function () {
       assert.equal(true, css.indexOf('#fff') > 0);
     });
 });
+
+it('render stylus', function () {
+  var _str = fs.readFileSync('test.less', 'utf-8');
+  require('..').render(_str, { cache: false }, function (err, styl) {
+    if (err) {
+      throw err;
+    }
+    assert.equal(true, styl.indexOf('=') > 0);
+  });
+});

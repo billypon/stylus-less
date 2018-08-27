@@ -31,11 +31,63 @@ function lookupFile(file, paths) {
     utils.lookup(file + '.less', paths) || utils.lookup(path.resolve(file + '/', 'index.less'), paths);
 }
 
-module.exports = exports = function (options) {
+function handler(ctx, block) {
+  var parent = ctx.renderer.options.parent;
+  block = block.clone(parent);
+  block.parent = parent;
+  block.scope = false;
+  block.push(ctx.visit(block));
+}
+
+function render(str, options, callback) {
   options = options || {};
   options.prefix = options.prefix !== undefined ? options.prefix : '$';
-  options.cache = options.cache === false ? false : true;
   options.less = _.defaultsDeep({compress: true}, options.less || {});
+
+  var list = str.match(/^@[^:\n]+:[^;]+/gm);
+  str += '\n* {\n';
+  list.forEach(function (x) {
+    var name = x.split(':')[0].substr(1).trim();
+    str += 'e("' + name + ':@{' + name + '};");\n';
+  });
+  if (options.less.globalVars) {
+    for (var x in options.less.globalVars) {
+      if (str.indexOf('"' + x + ':') > 0) {
+        continue;
+      }
+      str += 'e("' + x + ':' + options.less.globalVars[x] + ';");\n';
+    }
+  }
+  str += '}';
+
+  var ctx = this;
+  less.render(str, options.less, function (err, result) {
+    if (err) {
+      return callback.call(ctx, err);
+    }
+
+    var styl = '';
+    result.css.split(/[;\n{}]/).forEach(function (x) {
+      if (x.indexOf(':') < 0) {
+        return;
+      }
+      x = x.split(':');
+      if (x[1] === '') {
+        return;
+      }
+      if (options.prefix) {
+        styl += options.prefix;
+      }
+      styl += x[0] + ' = ' + x[1] + '\n';
+    });
+
+    callback.call(ctx, undefined, styl);
+  });
+}
+
+module.exports = exports = function (options) {
+  options = options || {};
+  options.cache = options.cache === false ? false : true;
   return function (_stylus) {
     _stylus.include(__dirname);
     _stylus.define('import-less', function (file) {
@@ -45,72 +97,34 @@ module.exports = exports = function (options) {
         return;
       }
 
-      var fn = function (_this, block) {
-        var parent = _this.renderer.options.parent;
-        block = block.clone(parent);
-        block.parent = parent;
-        block.scope = false;
-        block.push(_this.visit(block));
-      }
-
       file = path.resolve(file);
       if (options.cache && stylusCache[file]) {
         var block = stylusCache[file];
-        fn(this, block);
+        handler(this, block);
         return;
       }
       var str = readFile(file, options.cache);
 
-      var list = str.match(/^@[^:\n]+:[^;]+/gm);
-      str += '\n* {\n';
-      list.forEach(function (x) {
-        var name = x.split(':')[0].substr(1).trim();
-        str += 'e("' + name + ':@{' + name + '};");\n';
-      });
-      if (options.less.globalVars) {
-        for (var x in options.less.globalVars) {
-          if (str.indexOf('"' + x + ':') > 0) {
-            continue;
-          }
-          str += 'e("' + x + ':' + options.less.globalVars[x] + ';");\n';
-        }
-      }
-      str += '}';
-
-      var _this = this;
-      less.render(str, options.less, function (err, result) {
+      render.call(this, str, options, function (err, styl) {
         if (err) {
           throw err;
         }
 
-        str = '';
-        result.css.split(/[;\n{}]/).forEach(function (x) {
-          if (x.indexOf(':') < 0) {
-            return;
-          }
-          x = x.split(':');
-          if (x[1] === '') {
-            return;
-          }
-          if (options.prefix) {
-            str += options.prefix;
-          }
-          str += x[0] + ' = ' + x[1] + '\n';
-        });
-
-        var parser = new stylus.Parser(str, stylus.utils.merge({
+        var parser = new stylus.Parser(styl, stylus.utils.merge({
           root: new stylus.nodes.Block()
-        }), _this.options);
+        }), this.options);
         var block = parser.parse();
         if (options.cache) {
           stylusCache[file] = block;
         }
 
-        fn(_this, block);
+        handler(this, block);
       });
     });
   }
 }
+
+exports.render = render;
 
 exports.path = __dirname;
 exports.version = require(__dirname + '/package.json').version;

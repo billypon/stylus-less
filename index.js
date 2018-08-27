@@ -124,6 +124,8 @@ module.exports = exports = function (options) {
   }
 }
 
+exports.readFile = readFile;
+
 exports.render = render;
 
 exports.path = __dirname;

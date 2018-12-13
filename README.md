@@ -15,7 +15,7 @@ var stylus = require('stylus');
 var str = fs.readFileSync('test.styl', 'utf-8');
 stylus(str)
   .set('filename', 'test.styl')
-  .use(require('..')())
+  .use(require('stylus-less')())
   .render(function (err, css) {
     if (err) {
       throw err;
